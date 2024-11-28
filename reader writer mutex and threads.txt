@@ -1,0 +1,49 @@
+import threading
+
+# Shared data and synchronization primitives
+reader_count = 0
+mutex = threading.Lock()  # Protects reader_count
+rw_mutex = threading.Semaphore(1)  # Ensures writer's mutual exclusion
+
+def reader(reader_id):
+    global reader_count
+    while True:
+        # Entry section
+        with mutex:
+            reader_count += 1
+            if reader_count == 1:  # First reader blocks writers
+                rw_mutex.acquire()
+        
+        # Reading section
+        print(f"Reader {reader_id} is reading.")
+        
+        # Exit section
+        with mutex:
+            reader_count -= 1
+            if reader_count == 0:  # Last reader unblocks writers
+                rw_mutex.release()
+        
+        # Simulate delay
+        time.sleep(1)
+
+def writer(writer_id):
+    while True:
+        # Entry section
+        rw_mutex.acquire()
+        
+        # Writing section
+        print(f"Writer {writer_id} is writing.")
+        
+        # Exit section
+        rw_mutex.release()
+        
+        # Simulate delay
+        time.sleep(1)
+
+# Create threads for readers and writers
+reader_threads = [threading.Thread(target=reader, args=(i,)) for i in range(5)]
+writer_threads = [threading.Thread(target=writer, args=(i,)) for i in range(2)]
+
+# Start threads
+for t in reader_threads + writer_threads: t.start()
+for t in reader_threads + writer_threads: t.join()
